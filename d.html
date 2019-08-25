@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>我的</title>
+		<link href="css/mui.min.css" rel="stylesheet" />
+		<link href="css/style_d.css" rel="stylesheet" />
+		<link rel="stylesheet" type="text/css" href="css/feedback-page.css" />
+		<script src="js/mui.min.js"></script>
+		<script src="js/app.js"></script>
+		<script src="js/jquery.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/common.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
+	</head>
+	<body>
+			<ul class="mui-table-view mui-table-view-chevron">
+				<!--头文件-->
+				<li class="mui-table-view-cell mui-media" id="account">
+					<a class="mui-navigate-right" id="app">
+						<!-- 点击后转入个人信息修改-->
+						<img class="mui-media-object mui-pull-left head-img" src="images/qq.png" id="head-img">
+						<div class="mui-media-body">
+							{{userName}}
+							<p class="mui-ellipsis">账号ID:{{id}}</p>
+						</div>
+					</a>
+				</li>
+			</ul>
+			<ul class="mui-table-view mui-table-view-chevron">
+				<li class="mui-table-view-cell">
+					<a class="mui-navigate-right">账号与安全</a>
+				</li>
+			</ul>
+			<ul class="mui-table-view mui-table-view-chevron">
+				<li class="mui-table-view-cell" id="newMs">
+					<a href="#notifications" class="mui-navigate-right">新消息通知</a>
+				</li>
+				<li class="mui-table-view-cell" id="GarbageEvaluate">
+					<a href="#privacy" class="mui-navigate-right">垃圾评分记录</a>
+				</li>
+				<li class="mui-table-view-cell" id="Garbage">
+					<a href="#general" class="mui-navigate-right">称重数据记录</a>
+				</li>
+				<li class="mui-table-view-cell">
+					<a href="#general" class="mui-navigate-right">打卡时间记录</a>
+				</li>
+			</ul>
+			<ul class="mui-table-view mui-table-view-chevron">
+				<li class="mui-table-view-cell">
+					<a href="#about" class="mui-navigate-right">关于软件<i class="mui-pull-right update">V1.0</i></a>
+				</li>
+			</ul>
+			<ul class="mui-table-view">
+				<li class="mui-table-view-cell" style="text-align: center;">
+					<a>退出登录</a>
+				</li>
+			</ul>
+	</body>
+	<script type="text/javascript">
+		(function($, doc) {
+				$.init();
+				$("#account").on("tap", "a", function() {
+					$.openWindow({
+						url: "d_me.html",
+						id: "d_me.html"
+					})
+				})
+				$("#newMs").on("tap", "a", function() {
+					$.openWindow({
+						url: "d_newMs.html",
+						id: "d_newMs.html"
+					})
+				})
+				$("#Garbage").on("tap","a",function(){
+					$.openWindow({
+						url:"d_Garbage.html",
+						id:"d_Garbage.html"
+					})
+				$("#GarbageEvaluate").on("tap","a",function(){
+					$.openWindow({
+						url:"d_GarbageEvaluate.html",
+						id:"d_GarbageEvaluate.html"
+					})
+				})
+				})
+				$.plusReady(function() {
+						var vm = new Vue({
+							"el": "#app",
+							data: {},
+							computed: {
+								userName: function() {
+									return JSON.parse(localStorage.getItem("$loginUser")).userName;
+								},
+								id: function() {
+									return JSON.parse(localStorage.getItem("$loginUser")).id;
+								}
+							}
+						});
+
+					}
+
+				);
+				$.oldBack = mui.back;
+				var backButtonPress = 0;
+
+				$.back = function(event) {
+					backButtonPress++;
+
+					if (backButtonPress > 1) {
+						plus.runtime.quit();
+					} else {
+						plus.nativeUI.toast('再按一次退出应用');
+					}
+
+					setTimeout(function() {
+							backButtonPress = 0;
+						}
+
+						, 1000);
+					return false;
+				}
+
+				;
+
+			}
+
+			(mui, document));
+	</script>
+</html>

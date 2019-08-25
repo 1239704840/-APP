@@ -1,0 +1,414 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>首页</title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="css/mui.min.css" rel="stylesheet" />
+		<link href="css/style_a.css" rel="stylesheet" />
+		<script src="js/mui.min.js"></script>
+		<script src="js/jquery.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/common.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/app.js"></script>
+		<script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
+		<script type="text/javascript">
+			mui.init();
+			var img = null;
+			var blist = [];
+			//console.log(JSON.stringify(localStorage.valueOf()));
+			//扫描成功后的操作
+			function scaned(t, r, f) {
+				//t为码的型号 r为码中的内容 f为文件存放
+				console.log(t + r + f);
+				var d = new Date();
+				var h = d.getHours(),
+					m = d.getMinutes(),
+					s = d.getSeconds(),
+					ms = d.getMilliseconds();
+				if (h < 10) {
+					h = '0' + h;
+				}
+				if (m < 10) {
+					m = '0' + m;
+				}
+				if (s < 10) {
+					s = '0' + s;
+				}
+				if (ms < 10) {
+					ms = '00' + ms;
+				} else if (ms < 100) {
+					ms = '0' + ms;
+				}
+				var ts = '[' + h + ':' + m + ':' + s + '.' + ms + ']';
+				var li = null,
+					hl = document.getElementById('history');
+				if (blist.length > 0) {
+					li = document.createElement('li');
+					li.className = 'ditem';
+					hl.insertBefore(li, hl.childNodes[0]);
+				} else {
+					li = document.getElementById('nohistory');
+				}
+				//li.id = blist.length;
+				//t为码的型号 r为码中的内容
+				var html = '[' + h + ':' + m + ':' + s + '.' + ms + ']' + '　　' + t + '码<div class="hdata">';
+				console.log(html);
+				//输出扫描时间与扫描信息,这里可以进行查询
+				goWebApiGet("http://172.16.100.12:5003/api/Household/" + r, function(ret, textStatus) {
+					console.log(JSON.stringify(ret));
+					console.log(ret.responseJSON.name);
+					console.log(textStatus);
+					if (ret.statusText == "error") {
+						return callback("错误");
+						html += r;
+						html += '   信息错误';
+						html += '</div>';
+						console.log(html);
+						li.innerHTML = html;
+					} else if (ret.statusText == "OK") {
+						html += ret.responseJSON.name + '    ' + r;
+						html += '    信息正确 点击进行称重';
+						html += '</div>';
+						console.log(html + "OK");
+						li.innerHTML = html;
+						//设置点击后的属性,根据id选择评分
+						li.setAttribute('onclick', 'cheng(' + r + ')');
+						blist[blist.length] = {
+							type: t,
+							result: r,
+							file: f
+						};
+						update(t, r, f);
+					} else {
+						html += '   错误';
+						html += '</div>';
+						li.innerHTML = html;
+					}
+				});
+			}
+
+			//称重代码
+			function cheng(id) {
+				// 		var FixedTime={
+				// 			testreceiveDataStr2(app){
+				// 				if(app){
+				// 					FixedTime.testreceiveDataStr2=app;
+				// 				}
+				// 			}
+				// 		}
+				//console.log(FixedTime.testreceiveDataStr2);
+				var receiveDataStr = localStorage.getItem("receiveDataStr");
+				mui.confirm(receiveDataStr, '请确认是否正确', ['取消', '确认'], function(e) {
+					console.log(e.index);
+					if (e.index == 1) {
+						console.log("点击了确认");
+						var paramTag = {
+							"householdId": id,
+							"type": "湿垃圾",
+							"weight": receiveDataStr,
+						}
+						goWebApiPost("http://172.16.100.12:5003/api/Garbage", paramTag, function(ret, textStatus) {
+							console.log(JSON.stringify(ret));
+							console.log("生成的Garbageid"+ret.responseJSON);
+							console.log(textStatus);
+							if (ret.statusText == "error") {
+								return callback("网络错误");
+							} else if (ret.statusText == "OK") {
+								localStorage.setItem("Garbageid",ret.responseJSON);
+								var li = null,
+									hl = document.getElementById('history');
+								if (blist.length > 0) {
+									li = document.createElement('li');
+									li.className = 'ditem';
+									hl.insertBefore(li, hl.childNodes[0]);
+								} else {
+									li = document.getElementById('nohistory');
+								}
+								var html = '<div class="hdata">id 号为';
+								html += id;
+								html += '  称重为 ' + receiveDataStr + '  点击评分';
+								//html+=e.index;
+								html += '</div>';
+								console.log(html);
+								li.innerHTML = html;
+								li.setAttribute('onclick', 'selected(' + id + ')');
+								
+							} else {
+								console.log("点击了失败");
+							}
+						});
+					}
+				})
+			}
+			
+			//评分代码
+			function selected(id) {
+				// var h = blist[id];
+				// console.log(h);
+				// update(h.type, h.result, h.file);
+				console.log(id);
+				//if (h.result.indexOf('http://') == 0 || h.result.indexOf('https://') == 0) {
+				if (false) {
+					plus.nativeUI.confirm(h.result, function(i) {
+						if (i.index == 0) {
+							plus.runtime.openURL(h.result);
+						}
+					}, '', ['打开', '取消']);
+				} else {
+					// 	plus.nativeUI.alert(h.result);
+					plus.nativeUI.actionSheet({
+						title: "评分状况",
+						cancel: "取消",
+						buttons: [{
+							title: "1"
+						}, {
+							title: "2"
+						}, {
+							title: "3"
+						}]
+					}, function(e) {
+						//e.index 代表选择按钮的序列号
+						var zz=localStorage.getItem("$loginUser");
+						console.log(JSON.parse(zz).id);
+						var paramTag = {
+							"garbageId": localStorage.getItem("Garbageid"),
+							"workerId": JSON.parse(localStorage.getItem("$loginUser")).id,
+							"score": e.index
+						}
+						goWebApiPost("http://172.16.100.12:5003/api/GarbageEvaluate", paramTag, function(ret, textStatus) {
+								console.log(JSON.stringify(ret));
+								console.log(textStatus);
+								if (ret.statusText == "error") {
+									return callback("网络错误");
+								} else if (ret.statusText == "OK") {
+									var li = null,
+										hl = document.getElementById('history');
+									if (blist.length > 0) {
+										li = document.createElement('li');
+										li.className = 'ditem';
+										hl.insertBefore(li, hl.childNodes[0]);
+									} else {
+										li = document.getElementById('nohistory');
+									}
+									//li.id = blist.length;
+									var html = '<div class="hdata">';
+									html += id;
+									html += '评分为';
+									html += e.index;
+									html += '  评分成功！</div>';
+									console.log(html);
+									li.innerHTML = html;
+									console.log("User pressed: " + e.index + id);
+								}
+							});
+							
+						});
+						
+					}
+					
+					
+				}
+
+
+				function update(t, r, f) {
+					outSet('扫描成功：');
+					outLine(t);
+					outLine(r);
+					outLine('\n图片地址：' + f);
+					if (!f || f == 'null') {
+						img.src = '../img/barcode.png';
+					} else {
+						plus.io.resolveLocalFileSystemURL(f, function(entry) {
+							img.src = entry.toLocalURL();
+						});
+						//img.src = 'http://localhost:13131/'+f;
+					}
+				}
+
+				function onempty() {
+					if (window.plus) {
+						plus.nativeUI.alert('无扫描记录');
+					} else {
+						alert('无扫描记录');
+					}
+				}
+
+				//清除历史
+				function cleanHistroy() {
+					if (blist.length > 0) {
+						var hl = document.getElementById('history');
+						hl.innerHTML = '<li id="nohistory" class="ditem" onclick="onempty();">无历史记录	</li>';
+					}
+					plus.io.resolveLocalFileSystemURL('_doc/barcode/', function(entry) {
+						entry.removeRecursively(function() {
+							// Success
+						}, function(e) {
+							//alert( "failed"+e.message );
+						});
+					});
+				}
+
+				// 打开二维码扫描界面 
+				function openBarcode() {
+					createWithoutTitle('barcode_scan.html', {
+						titleNView: {
+							type: 'float',
+							backgroundColor: 'rgba(215,75,40,0.3)',
+							titleText: '扫一扫',
+							titleColor: '#FFFFFF',
+							autoBackButton: true,
+							buttons: [{
+								fontSrc: '_www/helloh5.ttf',
+								text: '\ue302',
+								fontSize: '18px',
+								onclick: 'javascript:scanPicture()'
+							}]
+						}
+					});
+				}
+		</script>
+		<style type="text/css" media="screen">
+			.hdata {
+				color: #e1673e;
+				font-size: 14px;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			}
+
+			)
+		</style>
+	</head>
+	<body onload="img=document.getElementById('bimg')">
+		<br />
+		<img style="width:40%" id="bimg" src="images/frame.png" />
+		<br />
+		<div class="button" onclick="openBarcode()">扫一扫评分</div>
+		<ul id="history" class="dlist" style="text-align:left;">
+			<li id="nohistory" class="ditem" onclick="onempty()">无历史记录 </li>
+		</ul>
+		<br />
+		<div class="button button-waring" onclick="cleanHistroy()">清空历史记录</div>
+		<div id="outpos" />
+		<div id="output">
+			通过二维码扫描识别,获取用户信息,点击用户信息评分
+		</div>
+		<div id="app" class="mui-text-center">
+			<!-- 						<h3>接收的数据：</h3>
+			<div>
+				<span>{{receiveDataStr}}</span>
+			</div> -->
+		</div>
+
+		<script type="text/javascript">
+			//vue显示数据
+
+			(function($, doc) {
+				$.init();
+
+				$.plusReady(function() {
+					var bluetoothTool = new BluetoothTool();
+					var mainActivity = plus.android.runtimeMainActivity();
+					var vm = new Vue({
+						"el": "#app",
+						data: {
+							bluetoothStatus: false,
+							pairedDevices: [],
+							newDevices: [],
+							receiveDataArr: [],
+							deviceStatus: "未连接"
+						},
+						// mounted:function{
+						// 	this.sendreceiveDataStr2();
+						// },
+						methods: {
+							getBluetoothStatus: function() {
+								this.bluetoothStatus = bluetoothTool.getBluetoothStatus();
+							},
+							turnOnBluetooth: function() {
+								var requestCode = 1;
+								bluetoothTool.turnOnBluetooth(mainActivity, requestCode);
+								var that = this;
+								setTimeout(function() {
+									that.getBluetoothStatus();
+								}, 500);
+							},
+							turnOffBluetooth: function() {
+								this.pairedDevices = [];
+								this.newDevices = [];
+								this.receiveDataArr = [];
+								bluetoothTool.turnOffBluetooth();
+								this.getBluetoothStatus();
+							},
+							getConnetedDevices: function() {
+								this.pairedDevices = bluetoothTool.getConnetedDevices();
+							},
+							findDevices: function() {
+								bluetoothTool.findDevices(mainActivity, this.newDevices);
+							},
+							connDevice: function(address, name) {
+								var b = bluetoothTool.connDevice(mainActivity, address);
+								if (b) {
+									this.deviceStatus = "已连接" + name;
+									this.readData();
+								}
+							},
+							readData: function() {
+								bluetoothTool.readData(mainActivity, this.receiveDataCallback);
+							},
+							receiveDataCallback: function(data) {
+								if (this.receiveDataArr.length >= 100) {
+									this.receiveDataArr = [];
+								}
+								this.receiveDataArr.push(data);
+							},
+							// receiveDataStr2: function() {
+							// 	var str = String.fromCharCode.apply(String, this.receiveDataArr);
+							// 	var arr = str.split("=");
+							// 	//console.log(str);
+							// 	console.log(search(arr));
+							// 	return search(arr);
+							// },
+							// sendreceiveDataStr2:function(){
+							// 	FixedTime.testreceiveDataStr2(this.receiveDataStr2);
+							// }
+						},
+						computed: {
+							receiveDataStr: function() {
+								var str = String.fromCharCode.apply(String, this.receiveDataArr);
+								var arr = str.split("=");
+								//console.log(str);
+								console.log(search(arr));
+								return search(arr);
+							},
+							bluetoothStatusDesc: function() {
+								return this.bluetoothStatus ? "已开启" : "已关闭";
+							}
+						}
+					});
+				});
+
+				$.oldBack = mui.back;
+				var backButtonPress = 0;
+
+				$.back = function(event) {
+					backButtonPress++;
+
+					if (backButtonPress > 1) {
+						plus.runtime.quit();
+					} else {
+						plus.nativeUI.toast('再按一次退出应用');
+					}
+
+					setTimeout(function() {
+						backButtonPress = 0;
+					}, 1000);
+					return false;
+				};
+			}(mui, document));
+		</script>
+	</body>
+</html>

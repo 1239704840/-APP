@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>数据</title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="css/mui.min.css" rel="stylesheet" />
+	</head>
+
+	<body>
+		<div id="" class="mui-content">
+			<button type="button" class="mui-btn mui-btn-blue mui-btn-block" id="btnK" onclick="btnKS()" style="display: block;">打卡</button>
+			<button type="button" class="mui-btn mui-btn-blue mui-btn-block" id="btnN" onclick="btnNS()" style="display: none;">下班</button>
+			<div id="show">				
+			</div>
+			<div id="allmap" style="width: 360px;height:490px;"></div>
+			
+		</div>
+		<script src="js/mui.min.js"></script>
+		<script src="js/app.js"></script>
+		<script src="js/jquery.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/common.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
+		<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=zQstt626lw5fTec5thq4CGiGoGYOwiQd"></script>
+		<script type="text/javascript" src="http://lbsyun.baidu.com/custom/stylelist.js"></script>
+		<script type="text/javascript">
+			// 百度地图API功能
+			var map = new BMap.Map("allmap");
+			var point = new BMap.Point(116.331398, 39.897445);
+			map.centerAndZoom(point, 22);
+			var geolocation = new BMap.Geolocation();
+			geolocation.getCurrentPosition(function(r) {
+				if (this.getStatus() == BMAP_STATUS_SUCCESS) {
+					var mk = new BMap.Marker(r.point);
+					map.addOverlay(mk);
+					map.panTo(r.point);
+				var show=document.getElementById("show");
+				show.innerHTML='您的位置：' + r.point.lng + ',' + r.point.lat;
+					
+				} else {
+					alert('failed' + this.getStatus());
+				}
+			}, {
+				enableHighAccuracy: true
+			});
+
+
+			function btnKS() {
+				plus.nativeUI.alert("开始打卡");
+				document.getElementById("btnK").setAttribute("style", "display: none;");
+				document.getElementById("btnN").setAttribute("style", "display: block;");
+			}
+
+			function btnNS() {
+				plus.nativeUI.alert("您已下班");
+				document.getElementById("btnN").setAttribute("style", "display: none;");
+				document.getElementById("btnK").setAttribute("style", "display: block;");				
+			}
+
+
+
+
+			(function($, doc) {
+				$.init();
+				$.plusReady(function() {});
+				//推出的页面
+				$.oldBack = mui.back;
+				var backButtonPress = 0;
+				$.back = function(event) {
+					backButtonPress++;
+					if (backButtonPress > 1) {
+						plus.runtime.quit();
+					} else {
+						plus.nativeUI.toast('再按一次退出应用');
+					}
+					setTimeout(function() {
+						backButtonPress = 0;
+					}, 1000);
+					return false;
+				};
+
+
+			}(mui, document));
+		</script>
+	</body>
+
+</html>

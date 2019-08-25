@@ -1,0 +1,379 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="css/mui.min.css" rel="stylesheet" />
+	</head>
+	<style type="text/css">
+
+	</style>
+	<body>
+		<div id="app" class="mui-text-center">
+			<button type="button" class="mui-btn mui-btn-primary mui-btn-outlined" v-on:click="turnOnBluetooth">打开蓝牙</button>
+			<button type="button" class="mui-btn mui-btn-primary mui-btn-outlined" v-on:click="turnOffBluetooth">关闭蓝牙</button>
+
+			<h3>蓝牙状态：{{bluetoothStatusDesc}}</h3>
+			<h3>设备连接：{{deviceStatus}}</h3>
+			<button type="button" class="mui-btn mui-btn-primary mui-btn-outlined" v-on:click="getConnetedDevices">已配对的设备</button>
+			<button type="button" class="mui-btn mui-btn-primary mui-btn-outlined" v-on:click="findDevices">搜索蓝牙设备</button><br>
+			<h3>接收的数据：</h3>
+			<div>
+				<span>{{receiveDataStr}}</span>
+			</div>
+
+			<br>--------------------------------------------<br>
+			<br> 已配对的设备：
+			<br>
+			<ul>
+				<li v-for="device in pairedDevices">
+					名称：{{device.name}}<br> 地址：{{device.address}}
+					<br>
+					<button type="button" class="mui-btn mui-btn-primary mui-btn-outlined" v-on:click="connDevice(device.address,device.name)">连接</button>
+				</li>
+			</ul>
+			发现的设备：<br>
+			<ul>
+				<li v-for="device in newDevices">
+					名称：{{device.name}}<br> 地址：{{device.address}}<br>
+					<button type="button" class="mui-btn mui-btn-primary mui-btn-outlined" v-on:click="connDevice(device.address,device.name)">连接</button>
+
+				</li>
+			</ul>
+			<br>--------------------------------------------<br>
+			<!-- 			<input type="button" name="" id="" value="打开蓝牙" @click="turnOnBluetooth" />
+			<br>
+			<input type="button" name="" id="" value="断开蓝牙" @click="turnOffBluetooth" />
+			<br>
+			<input type="button" name="" id="" value="已配对的设备" @click="getConnetedDevices" />
+			<br>
+			<input type="button" name="" id="" value="搜索蓝牙" @click="findDevices" /> -->
+
+		</div>
+		<script src="js/mui.min.js"></script>
+		<script src="js/app.js"></script>
+		<script src="js/jquery.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/common.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
+
+		<script type="text/javascript">
+			(function($, doc) {
+				$.init();
+				$.plusReady(
+					function() {
+						var bluetoothTool = new BluetoothTool();
+						var mainActivity = plus.android.runtimeMainActivity();
+						var vm = new Vue({
+							"el": "#app",
+							data: {
+								bluetoothStatus: false,
+								pairedDevices: [],
+								newDevices: [],
+								receiveDataArr: [],
+								deviceStatus: "未连接"
+							},
+							methods: {
+								getBluetoothStatus: function() {
+									this.bluetoothStatus = bluetoothTool.getBluetoothStatus();
+								},
+								turnOnBluetooth: function() {
+									var requestCode = 1;
+									bluetoothTool.turnOnBluetooth(mainActivity, requestCode);
+									var that = this;
+									setTimeout(function() {
+										that.getBluetoothStatus();
+									}, 500);
+								},
+								turnOffBluetooth: function() {
+									this.pairedDevices = [];
+									this.newDevices = [];
+									this.receiveDataArr = [];
+									bluetoothTool.turnOffBluetooth();
+									this.getBluetoothStatus();
+								},
+								getConnetedDevices: function() {
+									this.pairedDevices = bluetoothTool.getConnetedDevices();
+								},
+								findDevices: function() {
+									bluetoothTool.findDevices(mainActivity, this.newDevices);
+								},
+								connDevice: function(address, name) {
+									var b = bluetoothTool.connDevice(mainActivity, address);
+									if (b) {
+										this.deviceStatus = "已连接" + name;
+										this.readData();
+									}
+								},
+								readData: function() {
+									bluetoothTool.readData(mainActivity, this.receiveDataCallback);
+								},
+								receiveDataCallback: function(data) {
+									if (this.receiveDataArr.length >= 100) {
+										this.receiveDataArr = [];
+									}
+									this.receiveDataArr.push(data);
+								}
+							},
+							computed: {
+								receiveDataStr: function() {
+									var str = String.fromCharCode.apply(String, this.receiveDataArr);
+									var arr = str.split("=");
+									//console.log(str);
+									//console.log(search(arr));
+									localStorage.setItem("receiveDataStr",search(arr));
+									//console.log(localStorage.toString());
+									return search(arr);
+								},
+								bluetoothStatusDesc: function() {
+									return this.bluetoothStatus ? "已开启" : "已关闭";
+								}
+							}
+						});
+					});
+
+
+				$.oldBack = mui.back;
+				var backButtonPress = 0;
+				$.back = function(event) {
+					backButtonPress++;
+					if (backButtonPress > 1) {
+						plus.runtime.quit();
+					} else {
+						plus.nativeUI.toast('再按一次退出应用');
+					}
+					setTimeout(function() {
+						backButtonPress = 0;
+					}, 1000);
+					return false;
+				};
+
+
+			}(mui, document));
+		</script>
+		<script type="text/javascript">
+			var BluetoothTool = (function() {
+				function BluetoothTool() {
+					var BluetoothAdapter = plus.android.importClass("android.bluetooth.BluetoothAdapter");
+					this.mAdapter = BluetoothAdapter.getDefaultAdapter();
+					this.BluetoothAdapter = BluetoothAdapter;
+					this.BTSocket = null;
+				}
+				/**
+				 * 是否支持蓝牙
+				 * @return {boolean}
+				 */
+				BluetoothTool.prototype.isSupportBluetooth = function() {
+					var mAdapter = this.mAdapter;
+					if (mAdapter != null) {
+						return true;
+					}
+					return false;
+				}
+				/**
+				 * 获取蓝牙的状态
+				 * @return {boolean} 是否已开启
+				 */
+				BluetoothTool.prototype.getBluetoothStatus = function() {
+					var mAdapter = this.mAdapter;
+					if (mAdapter != null) {
+						return mAdapter.isEnabled();
+					}
+					return false;
+				}
+
+				/**
+				 * 打开蓝牙
+				 * @param activity
+				 * @param requestCode
+				 */
+				BluetoothTool.prototype.turnOnBluetooth = function(activity, requestCode) {
+					var mAdapter = this.mAdapter;
+					if (mAdapter != null && !mAdapter.isEnabled()) {
+						var Intent = plus.android.importClass("android.content.Intent");
+						var intent = new Intent(this.BluetoothAdapter.ACTION_REQUEST_ENABLE);
+						activity.startActivityForResult(intent, requestCode);
+					}
+				}
+
+				/**
+				 * 关闭蓝牙
+				 */
+				BluetoothTool.prototype.turnOffBluetooth = function() {
+					if (this.mAdapter != null && this.mAdapter.isEnabled()) {
+						this.mAdapter.disable();
+						this.BTSocket = null;
+					}
+				}
+
+				/**
+				 * 获取已经配对的设备
+				 * @return {Array} connetedDevices
+				 */
+				BluetoothTool.prototype.getConnetedDevices = function() {
+					var mAdapter = this.mAdapter;
+					var connetedDevices = [];
+
+					//蓝牙连接android原生对象，是一个set集合
+					var connetedDevicesAndroid = null;
+					if (mAdapter != null && mAdapter.isEnabled()) {
+						connetedDevicesAndroid = mAdapter.getBondedDevices();
+					}
+
+					if (!connetedDevicesAndroid) {
+						return connetedDevices;
+					}
+
+					//遍历连接设备的set集合，转换为js数组
+					var invoke = plus.android.invoke;
+					var it = invoke(connetedDevicesAndroid, "iterator");
+					while (plus.android.invoke(it, "hasNext")) {
+						var device = plus.android.invoke(it, "next");
+						connetedDevices.push({
+							"name": plus.android.invoke(device, "getName"),
+							"address": plus.android.invoke(device, "getAddress")
+						});
+					}
+					return connetedDevices;
+				}
+
+				/**
+				 * 发现拉亚设备
+				 * @param {Object} activity 当前活动界面
+				 * @param {Object} newDevices 用于接收发现的设备
+				 */
+				BluetoothTool.prototype.findDevices = function(activity, newDevices) {
+					var mAdapter = this.mAdapter;
+
+					var IntentFilter = plus.android.importClass("android.content.IntentFilter");
+					var BluetoothDevice = plus.android.importClass("android.bluetooth.BluetoothDevice");
+					var filter = new IntentFilter();
+					var BroadcastReceiver = plus.android.importClass("android.content.BroadcastReceiver");
+
+					var BTReceiver = plus.android.implements("io.dcloud.android.content.BroadcastReceiver", {
+						"onReceive": function(context, intent) {
+							plus.android.importClass(context);
+							plus.android.importClass(intent);
+
+							var action = intent.getAction();
+							//发现了设备
+							if (BluetoothDevice.ACTION_FOUND == action) {
+								//从Intent中获取设备的BluetoothDevice对象
+								var device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+								newDevices.push({
+									"name": plus.android.invoke(device, "getName"),
+									"address": plus.android.invoke(device, "getAddress")
+								});
+							}
+						}
+					});
+
+					filter.addAction(BluetoothDevice.ACTION_FOUND);
+					filter.addAction(this.BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+					activity.registerReceiver(BTReceiver, filter);
+					mAdapter.startDiscovery(); //开启搜索
+				}
+
+				/**
+				 * 根据蓝牙地址，连接设备
+				 * @param {Object} address
+				 * @return {Boolean}
+				 */
+				BluetoothTool.prototype.connDevice = function(activity, address) {
+					var invoke = plus.android.invoke;
+					var mAdapter = this.mAdapter;
+					var device = invoke(mAdapter, "getRemoteDevice", address);
+
+					var UUID = plus.android.importClass("java.util.UUID");
+					var InputStream = plus.android.importClass("java.io.InputStream");
+					var OutputStream = plus.android.importClass("java.io.OutputStream");
+					var BluetoothSocket = plus.android.importClass("android.bluetooth.BluetoothSocket");
+					var Toast = plus.android.importClass("android.widget.Toast");
+
+					var MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+					var BTSocket = null;
+
+					try {
+						BTSocket = invoke(device, "createRfcommSocketToServiceRecord", MY_UUID);
+					} catch (e) {
+						Toast.makeText(activity, "连接失败，获取Socket失败！", Toast.LENGTH_SHORT).show();
+						return false;
+					}
+					try {
+						invoke(BTSocket, "connect");
+						Toast.makeText(activity, "连接成功", Toast.LENGTH_SHORT).show();
+					} catch (e) {
+						Toast.makeText(activity, "连接失败", Toast.LENGTH_SHORT).show();
+						try {
+							BTSocket.close();
+							BTSocket = null;
+						} catch (e1) {
+
+						}
+						return false;
+					}
+					this.BTSocket = BTSocket;
+					return true;
+				}
+
+				/**
+				 * 读取数据
+				 * @param {Object} activity
+				 * @param {Function} callback
+				 * @return {Boolean}
+				 */
+				BluetoothTool.prototype.readData = function(activity, callback) {
+					var invoke = plus.android.invoke;
+					var BTInStream = null,
+						BTOutStream = null,
+						BTSocket = this.BTSocket;
+					var Toast = plus.android.importClass("android.widget.Toast");
+					if (!BTSocket) {
+						Toast.makeText(activity, "请先连接蓝牙设备！", Toast.LENGTH_SHORT).show();
+						return false;
+					}
+					try {
+						BTInStream = invoke(BTSocket, "getInputStream");
+						BTOutStream = invoke(BTSocket, "getOutputStream");
+					} catch (e) {
+						Toast.makeText(activity, "创建输入输出流失败！", Toast.LENGTH_SHORT).show();
+						try {
+							BTSocket.close();
+							BTSocket = null;
+						} catch (e1) {}
+						return false;
+					}
+
+					var readThreadState = false;
+					readData();
+					return true;
+
+					/**
+					 * 模拟java多线程读取数据
+					 */
+					function readData() {
+						if (readThreadState) {
+							return;
+						}
+						var count = 0;
+						while (invoke(BTInStream, "available") !== 0) {
+							readThreadState = true;
+							count++;
+							var data = invoke(BTInStream, "read");
+							callback && callback(data, count);
+							if (count >= 100) {
+								break;
+							}
+						}
+						readThreadState = false;
+						requestAnimationFrame(readData);
+					}
+				}
+
+				return BluetoothTool;
+			})();
+		</script>
+	</body>
+
+</html>

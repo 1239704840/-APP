@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>我的</title>
+		<link href="css/mui.min.css" rel="stylesheet" />
+		<link href="css/style.css" rel="stylesheet" />
+	</head>
+	<body>
+		<div class="main-content">
+			<div>
+				<h1>All Products</h1>
+				<ul id="products" />
+				<button type="button" class="testdelete">测试</button>
+				<p>222</p>
+			</div>
+		</div>
+	</body>
+    <script src="js/jquery.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		  var str={
+	userName: "user",
+	password: "123456a"
+	};
+		$(".testdelete").click(function() {
+        $.ajax({
+        url: "http://172.16.100.12:5003/api/Worker/ca3635bb-320d-48e2-9d09-b3fc20cc220e",
+        type: "delete",
+        dataType : "json",
+        contentType: 'application/json',
+        cache: false,
+        data:JSON.stringify(str),
+        success: function(data) {
+            alert(JSON.stringify(data))
+			console.log(JSON.stringify(data))
+        },
+        error: function(data) {
+            alert(JSON.stringify(data));
+        }
+    });
+    })
+	</script>
+	<script src="js/mui.min.js"></script>
+	<script src="js/app.js"></script>
+	<script src="js/common.js" type="text/javascript" charset="utf-8"></script>
+	<script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		(function($, doc) {
+				$.init();
+				$.plusReady(function(){}
+				);
+				$.oldBack = mui.back;
+				var backButtonPress = 0;
+
+				$.back = function(event) {
+					backButtonPress++;
+
+					if (backButtonPress > 1) {
+						plus.runtime.quit();
+					} else {
+						plus.nativeUI.toast('再按一次退出应用');
+					}
+					setTimeout(function() {
+							backButtonPress = 0;
+						}, 1000);
+					return false;
+				};
+
+			}
+
+			(mui, document));
+	</script>
+</html>
